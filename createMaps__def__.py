@@ -10,9 +10,9 @@ from galaxyParametersDictionary_v5 import *
 
 def findDell(RA, Dec, PA0, b_a, unfolded=False):
   angleRot = (numpy.pi/180.)*(PA0-90.)
-  xrot, yrot = (RA *numpy.cos(angleRot) - Dec * numpy.sin(angleRot), 
+  xrot, yrot = (RA *numpy.cos(angleRot) - Dec * numpy.sin(angleRot),
                 RA *numpy.sin(angleRot) + Dec * numpy.cos(angleRot))
-  # 
+  #
   if unfolded:
     sign = (xrot/numpy.abs(xrot))
   else:
@@ -21,18 +21,31 @@ def findDell(RA, Dec, PA0, b_a, unfolded=False):
   #
   return sign*Rell
 
-def retrieve_krigPos(path, galname, offset=[0.,0.], 
+
+def relativeCoordinates(RA, Dec, RA_gal, Dec_gal): #In degrees
+  # From Huchra+91
+  DeltaRA = numpy.sin(numpy.radians(RA-RA_gal))*numpy.cos(numpy.radians(Dec))
+  DeltaDec = (numpy.sin(numpy.radians(Dec))*numpy.cos(numpy.radians(Dec_gal))-              numpy.cos(numpy.radians(RA-RA_gal))*numpy.cos(numpy.radians(Dec))*numpy.sin(numpy.radians(Dec_gal)))
+  #
+  return numpy.degrees(DeltaRA), numpy.degrees(DeltaDec)
+
+def retrieve_krigPos(path, galname, offset=[0.,0.],
 					 keyword='VEL', clean=True):
   inputFits = pyfits.open(path)[1].data
   #
   RAgal = convAngCoord(CentreCoordinates[galname][0])[4]*15.
-  Decgal = convAngCoord(CentreCoordinates[galname][1])[4] 
-  Rell = findDell(inputFits['RA']+offset[0]/3600.-RAgal, 
-  					inputFits['Dec']+offset[1]/3600.-Decgal, 
-  					PA0[galname], b_a[galname])
+  Decgal = convAngCoord(CentreCoordinates[galname][1])[4]
   #
-  x = (inputFits['RA']-RAgal)*3600.+offset[0] 
-  y = (inputFits['Dec']-Decgal)*3600.+offset[1]
+  # OBSOLETE
+  # Rell = findDell(inputFits['RA']+offset[0]/3600.-RAgal,
+  #           inputFits['Dec']+offset[1]/3600.-Decgal,
+  #           PA0[galname], b_a[galname])
+  # x = (inputFits['RA']-RAgal)*3600.+offset[0]
+  # y = (inputFits['Dec']-Decgal)*3600.+offset[1]
+  #
+  x, y = relativeCoordinates(inputFits['RA'], inputFits['Dec'], RAgal, Decgal)
+  # Converting in arcsec and applying offset
+  x = x*3600.+offset[0]; y = y*3600.+offset[1]
   z, ez = inputFits[keyword], inputFits['ERR'+keyword]
   #
   if clean:
@@ -40,11 +53,11 @@ def retrieve_krigPos(path, galname, offset=[0.,0.],
     x, y, z, ez = x[selected], y[selected], z[selected], ez[selected]
   return [x, y, z, ez]
 
-# Minor axis mask needs conversion of positions because namely the slits have 
+# Minor axis mask needs conversion of positions because namely the slits have
 # the same coordinates as the Major axis mask
 
 # I'm applying the offset after the rotation
-def retrieve_krigPos_Minor(path, galname, offset=[0.,0.], 
+def retrieve_krigPos_Minor(path, galname, offset=[0.,0.],
 					 keyword='VEL'):
   inputFits = pyfits.open(path)[1].data
   #
@@ -61,14 +74,17 @@ def retrieve_krigPos_Minor(path, galname, offset=[0.,0.],
   angleNE = mod(90.-gal_PA0, 360.) #angle between galaxy major axis and East axis
   maskPA = -mod(angleNE+deltaPA, 360) #angle between the East-West axis and the mask alignment
   #
-  distRA = inputFits['RA']-RA_c    #Distance from mask CentreCoordinates (in degrees)
-  distDEC = inputFits['Dec']-Dec_c #Distance
+  # OBSOLETE
+  # distRA = inputFits['RA']-RA_c    #Distance from mask CentreCoordinates (in degrees)
+  # distDEC = inputFits['Dec']-Dec_c #Distance
+  #
+  distRA, distDec = relativeCoordinates(inputFits['RA'], inputFits['Dec'], RA_c, Dec_c)
   #
   angrot = maskPA*numpy.pi/180.
   realRA = (distRA*numpy.cos(angrot)-distDEC*numpy.sin(angrot))+RA_c+offset[0]/3600.   #Coordinates given the rotation of the mask
   realDEC = (distRA*numpy.sin(angrot)+distDEC*numpy.cos(angrot))+Dec_c+offset[1]/3600. #Coordinates given the rotation of the mask
   #
-  Rell = findDell(realRA-RAgal, realDEC-Decgal, PA0[galname], b_a[galname])#,unfolded=True)
+  # Rell = findDell(realRA-RAgal, realDEC-Decgal, PA0[galname], b_a[galname])#,unfolded=True)
   #
   x, y = (realRA-RAgal)*3600., (realDEC-Decgal)*3600.
   z, ez = SS_Minor_input[keyword], SS_Minor_input['ERR'+keyword]
@@ -84,21 +100,20 @@ def drawLayout(galname='NGC1023'):
   ax.set_aspect('equal')
   #Galaxy centre
   RAgal = convAngCoord(CentreCoordinates[galname][0])[4]*15.
-  Decgal = convAngCoord(CentreCoordinates[galname][1])[4] 
+  Decgal = convAngCoord(CentreCoordinates[galname][1])[4]
   ax.scatter(RAgal, Decgal, c='r', marker='x', s=50)
   #
   #Galaxy axes
-  major = ax.plot([numpy.sin(math.radians(PA0[galname]))*2+RAgal, numpy.sin(math.radians(PA0[galname]))*-2+RAgal], 
-     [numpy.cos(math.radians(PA0[galname]))*2+Decgal, numpy.cos(math.radians(PA0[galname]))*-2+Decgal], 
+  major = ax.plot([numpy.sin(math.radians(PA0[galname]))*2+RAgal, numpy.sin(math.radians(PA0[galname]))*-2+RAgal],
+     [numpy.cos(math.radians(PA0[galname]))*2+Decgal, numpy.cos(math.radians(PA0[galname]))*-2+Decgal],
      'r-')
-  minor = ax.plot([numpy.cos(math.radians(PA0[galname]))*2+RAgal, numpy.cos(math.radians(PA0[galname]))*-2+RAgal], 
+  minor = ax.plot([numpy.cos(math.radians(PA0[galname]))*2+RAgal, numpy.cos(math.radians(PA0[galname]))*-2+RAgal],
      [numpy.sin(math.radians(PA0[galname]))*-2+Decgal, numpy.sin(math.radians(PA0[galname]))*2+Decgal],
      'r-')
   #
   # Measured offset
   ax.scatter(RAgal-6./3600., Decgal+9./3600., marker='o', c='b')
   return ax
-
 
 
 def drawMask_design(ax, angleMask=0., offsetX=0., offsetY=0):
