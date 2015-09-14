@@ -2,7 +2,7 @@
 # Filename: createMap.py
 #
 # History
-# - v_1: create Kriging map wrapping R code in python 
+# - v_1: create Kriging map wrapping R code in python
 #
 #
 # This code creates a 2d map using kriging from an input of spatially        #
@@ -28,13 +28,16 @@
 # -scipy
 # -sys
 # -time
-# 
+#
+#
 #
 # Copyright: Nicola Pastorello (2015)
 #
+# To run: python createMap.py
+#
 ###############################################
 
-# Create kriging map 
+# Create kriging map
 from Nicola import *
 
 #Retrieve dictionary
@@ -46,6 +49,7 @@ from createMaps__def__ import *
 ### TEST DATA INPUT
 Xextra, Yextra, Zextra, eZextra = numpy.transpose(numpy.loadtxt('./testData.txt'))
 
+X, Y, Z, eZ = [], [], [], []
 for ii in numpy.arange(len(Xextra)):
   if not(numpy.isnan(Zextra[ii])):
     X.append(Xextra[ii])
@@ -63,16 +67,16 @@ fileout.close()
 
 
 
-### KRIGING PARAMETERS 
+### KRIGING PARAMETERS
 
 theta = 10. # Kriging range
 coeff = 3. # Kriging coeff
 
-dummy = KrigingR('./listElements.txt', visualize=False, 
-         theta_r = theta, coeff_r = coeff, savePdf = True, 
-         pathOutput = './', label='Kriging', sizePixelMap=300) 
+dummy = KrigingR('./listElements.txt', visualize=False,
+         theta_r = theta, coeff_r = coeff, savePdf = True,
+         pathOutput = './', label='Kriging', sizePixelMap=300)
 
-dummy = KrigingMapPython('./', 'GalaxyName', genTable, label='Kriging',
+dummy = KrigingMapPython('./', 'NGC1023', genTable, label='Kriging',
                             limits = [0, 250], sizePixelMap=300)  #For the visualization
 
 print 'DONE'
