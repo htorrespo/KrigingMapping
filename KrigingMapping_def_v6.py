@@ -324,10 +324,7 @@ def KrigingMapPython(inputPath, namegal, genTable, label='Z', limits=[-3, +2], v
   for jj in range(len(fileKriging[0])):
       xK.append(fileKriging[0][jj])
       yK.append(fileKriging[1][jj])
-      # print float(fileKriging[2][jj])
       if numpy.isfinite(fileKriging[2][jj]):
-      # if (fileKriging[2][jj] != 'NA') and (fileKriging[2][jj] != nan):
-        # print float(fileKriging[2][jj])
         zK.append(float(fileKriging[2][jj]))
         errzK.append(float(fileKriging[3][jj]))
         if float(fileKriging[2][jj]) > maxZmap: maxZmap = float(fileKriging[2][jj])
